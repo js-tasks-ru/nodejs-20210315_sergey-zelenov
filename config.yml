@@ -1,0 +1,7 @@
+version: 2
+travis: false
+git:
+  copy:
+    - data/**
+    - '*.*'
+    - '.github/**/*.*'
