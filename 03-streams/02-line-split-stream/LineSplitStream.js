@@ -4,36 +4,34 @@ const os = require('os');
 class LineSplitStream extends stream.Transform {
   constructor(options) {
     super(options);
-    this._prevLinePart = '';
+
+    this.remainder = '';
   }
-  
+
   _transform(chunk, encoding, callback) {
-    const lines = chunk.toString().split(os.EOL);
-    const linesCount = lines.length;
-    let linesQueue = [];
-    
-    if (!linesCount) {
-      this._prevLinePart += chunk.toString();
-    } else if (lines[linesCount - 1]) {
-      if (this._prevLinePart) {
-        lines[0] = `${this._prevLinePart}${lines[0]}`;
-      }
-      
-      linesQueue = linesQueue.concat(lines.slice(0, linesCount - 1));
-      for (const line of linesQueue) {
-        this.push(line);
-      }
-      
-      this._prevLinePart = lines[linesCount - 1];
+    const str = this.remainder + chunk.toString();
+    const lines = str.split(os.EOL);
+    const lastLine = lines.pop();
+    this.remainder = '';
+
+    for (const line of lines) {
+      this.push(line);
     }
-    
+
+    if (str.endsWith(os.EOL)) {
+      this.push(lastLine);
+    } else {
+      this.remainder = lastLine;
+    }
+
     callback();
   }
-  
+
   _flush(callback) {
-    if (this._prevLinePart) {
-      this.push(this._prevLinePart);
+    if (this.remainder) {
+      this.push(this.remainder);
     }
+
     callback();
   }
 }
